@@ -1,0 +1,881 @@
+1
+This article has been accepted for publication in IEEE Robotics and Automation Letters. This is the author's version which has not been fully edited and 
+content may change prior to final publication. Citation information: DOI 10.1109/LRA.2026.3686645
+IEEE ROBOTICS AND AUTOMATION LETTERS. PREPRINT VERSION. APRIL, 2026
+Online Learning-Enhanced High Order Adaptive Safety Control
+Lishuo Pan1, Mattia Catellani2, Thales C. Silva1, Lorenzo Sabattini2, Nora Ayanian1
+Abstract—Control barrier functions (CBFs) are an effective
+model-based tool to formally certify the safety of a system.
+With the growing complexity of modern control problems, CBFs
+have received increasing attention in both optimization-based
+and learning-based control communities as a safety filter, owing
+to their provable guarantees. However, success in transferring
+these guarantees to real-world systems is critically tied to model
+accuracy. For example, payloads or wind disturbances can signif
+icantly influence the dynamics of an aerial vehicle and invalidate
+the safety guarantee. In this work, we propose an efficient yet
+flexible online learning-enhanced high-order adaptive control
+barrier function using Neural ODEs. Our approach improves
+the safety of a CBF controller on the fly, even under complex
+time-varying model perturbations. In particular, we deploy our
+hybrid adaptive CBF controller on a 38g nano quadrotor, keeping
+a safe distance from the obstacle, against 18km/h wind.
+I. INTRODUCTION
+As the complexity of robotic mechanical systems and tasks
+increases, such as high-dimensional, nonlinear systems and
+agile control in quadrotors or quadruped robots, it leads to
+a broader adoption of learning-based approaches, which often
+come without safety guarantees. This necessitates formal safety
+guarantees built into the controller by definition. Control
+barrier functions (CBFs) have become a popular model-based
+tool for safety-critical control applications owing to their guar
+antees on set invariance (i.e., safety) without compromising
+performance [1]–[3]. That is, a safe control is computed by
+solving a quadratic program (QP) in a closed-loop system. In
+practice, however, the safety guarantee of a CBF can fail due to
+an inaccurate model. This inaccuracy is often caused by model
+mismatches or by external forces, like changes in payload or
+wind disturbances. The adaptive CBFs (aCBFs) compensate
+for model residuals and improve safety in real-world systems,
+addressing the aforementioned safety violations.
+Inspired by data-driven approaches that learn complex mod
+els [4]–[7], we propose a learning-enhanced high-order adap
+tive CBF (HO-aCBF) that improves safety online under time
+varying model perturbations. Our hybrid approach combines
+a nominal model with a neural network residual model to
+efficiently estimate the true dynamics using Knowledge-based
+Neural ODEs (KNODE) [6]. The model trains on state-control
+Manuscript received: November 20, 2025; Revised February 26, 2026;
+Accepted March 30, 2026. This paper was recommended for publication
+by Editor Clement Gosselin upon evaluation of the Associate Editor and
+Reviewers’ comments. This work was supported by NSF under Grant 2317145,
+Grant 2311967, and Grant 2330942. (Corresponding author: Lishuo Pan.)
+1Lishuo Pan, Thales C. Silva and Nora Ayanian are with the Department
+of Computer Science, Brown University, Providence, RI 02912 USA. Email:
+{lishuo_pan, thales_silva, nora_ayanian}@brown.edu.
+2Mattia Catellani and Lorenzo Sabattini are with the Department
+of Sciences and Methods for Engineering, University of Modena and
+Reggio Emilia, 41121 Modena, Italy. Email: {mattia.catellani,
+lorenzo.sabattini}@unimore.it.
+Digital Object Identifier (DOI): see top of this page.
+Fig. 1: A 38g nano quadrotor tracks a circular trajectory while keeping a
+safe distance from the obstacle, against an 18km/h wind. The safety is
+improved on-the-fly, i.e., the quadrotor moves further away from the obstacle
+after experiencing the wind once.
+data and allows data sampling with different time intervals
+(typical for a real-time system). Our approach offers high
+data efficiency compared to a pure learning-based approach
+by utilizing a nominal model, yet has the rich expressiveness
+of a neural network to capture complex residuals online.
+Neural-Fly [4] learns an adaptation term in its control
+law directly and achieves online adaptation to severe wind
+disturbances, but requires a significant offline training phase
+of approximately 12-minute flight data under diverse wind
+conditions. In contrast, our method learns the model on
+line and improves performance via a model-based controller,
+and does not require offline training, while supporting it
+when desired. Gaussian Processes (GPs) approaches, such as
+PILCO [8], learns dynamics for data-efficient policy search
+in reinforcement learning, and online GP residual learning [9]
+has been applied for model predictive control. While the above
+methods provide alternative strategies for learning dynamics,
+they differ from our approach, which embeds learned dynam
+ics directly into CBF constraints to improve safety online.
+Recent studies have shown that aCBFs (specifically, residual
+learning approaches) are effective at improving safety under
+model perturbations [10], [11]. However, these methods require
+offline training, which leads to safety violations when the
+residuals are out of the training distribution. Our learning
+enhanced aCBF, owing to its hybrid model approach, can
+adapt to unseen residuals online, making it well-suited for real
+world systems. In addition, in [10], [11], supervision of time
+derivatives of a control barrier function is required, which is
+obtained from noisy numerical differentiations. Instead, we use
+the Neural ODEs to approximate the residuals directly from
+observable state-control data. In practice, most CBF constraints
+for a mechanical system have relative degrees larger than one,
+thus requiring a high-order CBF (HOCBF). Our HO-aCBF
+algorithm generalizes the standard aCBF to handle high-order
+safety-critical constraints for a larger category of systems.
+Robust CBFs guarantee safety against model perturbations
+Authorized licensed use limited to: Xiamen University. Downloaded on May 11,2026 at 07:37:54 UTC from IEEE Xplore.  Restrictions apply. 
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+IEEE ROBOTICS AND AUTOMATION LETTERS. PREPRINT VERSION. APRIL, 2026
+This article has been accepted for publication in IEEE Robotics and Automation Letters. This is the author's version which has not been fully edited and 
+content may change prior to final publication. Citation information: DOI 10.1109/LRA.2026.3686645
+2
+by adding a robustifying term in CBF constraints [12]. Ro
+bust CBFs, however, require knowing the bounds of the
+model uncertainty and result in overly conservative controllers.
+Recently, robust adaptive CBFs (RaCBFs) have been pro
+posed [13]–[15]. In their formulation, an aCBF is used to
+mitigate over-conservativeness by estimating parametric un
+certainty. The authors in [16] extend the concurrent-learning
+aCBFs in [17] to HO-aCBFs. In these works, a strong assump
+tion is made that the residual is a linear model combining a
+known knowledge matrix and a learnable constant vector. In
+practice, this matrix may not be available, and the uncertainty
+is not constant, thus breaking their safety guarantees. Extensive
+tuning is also required for the concurrent-learning approach.
+Unlike aCBF frameworks in [13]–[17], our approach does
+not require prior knowledge or assumption of residuals, cap
+tures time-varying dynamics, and is robust to tuning. In
+experiments, we demonstrate that HO-aCBF controllers are in
+sufficient to capture time-varying residuals even with increased
+state-control data, resulting in inadequate performance. Addi
+tionally, our hybrid approach has high data efficiency compared
+to residual learning approaches in [10], [11], making it suitable
+for online adaptation. These learning frameworks [10], [11]
+require estimating time derivatives of a control barrier function
+using numerical differentiation. Instead, our approach learns
+the residual dynamics directly from state-control data.
+(order-one) CBF formulations, however, are conditioned on the
+assumption that h has relative degree one with respect to (1).
+Definition 1 (Relative degree [19]). A sufficiently smooth
+function h is said to have relative degree r ∈ N with
+respect to (1) on the set Rp if 1) LgLi−1
+f h(x) = 0, for all
+1 ≤i≤r−1, and 2) LgLr−1
+f h(x) ̸ =0 for all x ∈ Rp.
+For most mechanical systems and their safety requirements,
+h, a higher relative degree is required. High-order control
+barrier functions provide safety for such systems.
+Definition 2 (HOCBFs [18], [20]). Consider a system as in (1).
+Let {Ci}r
+i=1 be a collection of sets of the form Ci = {x ∈ Rp |
+ψi−1 ≥ 0} satisfying
+ψr(x) = ˙ψr−1(x) + αr(ψr−1(x))
+ψ0(x) = h(x),
+(3)
+(4)
+where {αi}r
+i=1 is a set of differentiable extended class K
+functions. A function h is said to be a HOCBF of order r
+for (1) on an open set D ⊃ ∩r
+i=1Ci if h has relative degree r
+on some nonempty R ⊆ D and there exists a suitable choice
+of {αi}r
+i=1, such that for all x ∈ D
+sup
+[Lfψr−1(x) + Lgψr−1(x)u +αr(ψr−1(x))
+u∈U
+The contributions of this work are twofold:
+1) a learning-enhanced high-order adaptive CBF that im
+proves safety under complex time-varying model pertur
+bations; and
+ψr(x,u)
+] ≥ 0. (5)
+Theorem 1 ([20]). Let h be a HOCBF for (1) on D ⊂ Rp
+as in Def. 2. Any locally Lipschitz controller u ∈ U that
+satisfies ψr(x,u) ≥ 0, renders ∩r
+i=1Ci forward invariant for
+the closed-loop system as in (1).
+2) an online hybrid approach using Knowledge-based Neu
+ral ODEs that solves CBF optimization with learnable
+parameters at 100Hz and trains online.
+We demonstrate our controller’s efficacy in simulation
+with different nonstationary residuals, benchmarked with
+HOCBFs [18], HO-aCBFs [16], [17] (with different hyperpa
+rameters). In physical experiments, we deploy our algorithm on
+a nano quadrotor weighing only 38g against 18km/h turbulent
+wind and efficiently improve safety performance on the fly.
+II. PRELIMINARIES
+A. High-order Control Barrier Functions (HOCBFs)
+Consider a nonlinear control affine system in the form
+˙
+x =f(x)+g(x)u,
+(1)
+where f : Rp → Rp and g : Rp → Rp×q are Lipschitz
+continuous functions, and u ∈ U ⊂ Rq is the control
+input. A closed set C ∈ Rp is forward invariant for the
+closed-loop system ˙ x if x(0) ∈ C ⇒ x(t) ∈ C,∀t. In this
+paper, the forward invariance property is used to formally
+define the notion of “safety”. It is assumed that any safe set
+can be expressed as a zero-superlevel set of a continuously
+differentiable function h(x) : Rp → R, written as
+C ={x∈Rp |h(x) ≥0}.
+(2)
+A control barrier function is a popular tool to produce con
+trols that render the set (2) forward invariant for (1). Classical
+B. Knowledge-based Neural ODEs (KNODE)
+KNODE [6] is a data-driven approach that learns the model
+from state-control pairs, i.e., z := [x;u]. Its data efficiency
+comes from leveraging a nominal model, learning merely the
+residual dynamics. The hybrid model is given by
+˙
+x = ˜f(z) + ˆfθ(z) = fh(z, ˆfθ(z)),
+(6)
+where ˜fdenotes a nominal model and ˆfθ denotes the residual
+model estimated by a neural network parameterized with θ.
+The neural ODE-based approach learns the model of a dy
+namical system. Instead of learning in the state space, it learns
+its dynamical model directly and predicts the state using ODE
+solvers, thus allowing observations sampled with different time
+intervals (typical in a physical real-time system). An efficient
+learning approach preserves the physics of a dynamic model,
+making it well-suited for our online HO-aCBF controller.
+III. PROBLEM FORMULATION
+Consider a robot that follows a reference with a desired
+control udes and certifies the safety of the desired control using
+a CBF. The safety guarantee of a CBF can fail under unknown
+model perturbations. We adopt the formulation in [13], and
+assume the true model as follows
+˙
+x =f(x)+g(x)u+d(x),
+(7)
+where f(x)+g(x)u forms a nominal model and d(x) includes
+all unmodeled residuals and is allowed to change over time.
+Authorized licensed use limited to: Xiamen University. Downloaded on May 11,2026 at 07:37:54 UTC from IEEE Xplore.  Restrictions apply. 
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+3
+This article has been accepted for publication in IEEE Robotics and Automation Letters. This is the author's version which has not been fully edited and 
+content may change prior to final publication. Citation information: DOI 10.1109/LRA.2026.3686645
+PAN et al.: ONLINE LEARNING-ENHANCED HIGH ORDER ADAPTIVE SAFETY CONTROL
+over time. We define a hybrid model, combining the nominal
+model with a neural network residual model, as follows,
+fh(z, ˆdθ(x)) = f(x) + g(x)u + ˆdθ(x),
+(8)
+where ˆdθ denotes the residual dynamics estimated by a neural
+network parameterized with θ.
+For a model-based controller, successfully transferring its
+guarantee to the real world depends on model fidelity. To
+handle model perturbations, we consider the hybrid model
+in (8) and propose a Neural ODE enhanced high-order adaptive
+control barrier function, namely, NODE-HO-aCBF. Similar to
+an HOCBF QP, the objective is to minimize the deviation
+between the safe and the desired controls. To adapt to the
+unknown residual dynamics, we modify the HOCBF constraint
+in (5) to (9b). The Lie-derivative of residual term ˆ
+dθ, i.e., Lˆdθ
+,
+is added to the HOCBF constraint to certify the hybrid model.
+We formulate the NODE-HO-aCBF QP as follows,
+Fig. 2: The picture depicts the system overview of our NODE-HO-aCBF
+framework. The safety control solves the NODE-HO-aCBF QP, which uses
+the most recently trained model, at 100Hz to certify the desired control. The
+state and control input data are stored in an online queue for training. The
+hybrid adaptation module combines a nominal model with a learning-based
+term that approximates the unknown residual dynamics online.
+The problem we want to solve is to recover the safety guar
+antee of the CBF-based controller by identifying the model
+perturbation d(x) using online state-control data.
+We propose an efficient learning-enhanced high-order aCBF
+that compensates for unknown time-varying and nonlinear
+residuals d(x) and improves the safety online. Our hybrid
+model combines the nominal with a neural network residual
+model ˆdθ parameterized with θ, using KNODE [6]. The
+residual model is trained on observable state-control data, i.e.,
+z := [x;u]. Furthermore, we generalize the proposed aCBFs
+to high-order aCBFs to handle a larger category of systems.
+IV. LEARNING-ENHANCED HIGH-ORDER ADAPTIVE
+CONTROL BARRIER FUNCTIONS
+Modeling inaccuracy can invalidate the safety guarantee of
+a CBF controller. We propose an efficient learning-enhanced
+high-order aCBF using KNODE, or NODE-HO-aCBF for
+short, depicted in Fig. 2. Our approach compensates for model
+perturbations from state-control data, improving safety online.
+In Sec. IV-A, we introduce our NODE-HO-aCBF optimization
+framework. In Sec. IV-B, we introduce KNODE for online
+residual learning. In Sec. V-A, we present an example of col
+lision avoidance using a double integrator with our controller.
+A. Learning-enhanced HO-aCBFs
+A simple nominal model is analytically convenient, but
+often does not capture the true dynamics. For instance, a
+quadrotor cannot exactly track a double integrator trajectory
+due to its kinematic constraints. External residual dynamics,
+such as wind turbulence or downwash effect between nearby
+quadrotors, can introduce nonlinear dynamics. Our approach
+allows an adaptive CBF to learn these model mismatches and
+external disturbances from data, improving safety online.
+We assume the true dynamics as in (7), where residual
+dynamics d(x) depend on the state and are allowed to change
+argmin
+u
+∥u−udes∥
+s.t. sup
+(9a)
+Lfψr−1(x) +Lgψr−1(x)u+Lˆdθ
+ψr−1(x)
+u∈U
+where,
++αr(ψr−1(x)) ≥ 0,
+ψr = ˙ψr−1 +αr(ψr−1)
+= ∂ψr−1
+∂x
+ψ0 =h(x).
+⊤
+(f +gu+ ˆdθ)+αr(ψr−1)
+(9b)
+(10)
+(11)
+(12)
+To compute ψr, the algorithm requires taking the (r−1)-th
+derivative of the residual dynamics ˆ
+network w.r.t. the state, i.e. ∇r−1
+dθ estimated by the neural
+x 
+ˆdθ, which can be computed
+by automatic differentiation from machine learning toolboxes
+or numerical methods. Our learning-enhanced controller runs
+at 100Hz on a real-time system. At each iteration step (see
+Algo. 1), the NODE-HO-aCBF loads the hybrid model if a
+new learned model is ready. A PID controller takes the current
+state x and reference xref to generate a desired control udes.
+By solving the QP in (9), a safe control u is produced and
+executed by the robot. The state-control pair z := [x,u] is
+added to the online queue for training.
+B. KNODE Online Learning
+An unknown nonstationary residual, as prior models quickly
+become obsolete, requires continuous online adaptation to
+identify the current true dynamics. We employ a queue Qtrain
+to store state-control pairs in a first-in, first-out (FIFO) manner,
+ensuring that the hybrid model fh is trained online with the
+most recent data (see Algo. 2). The neural ODE learns the dy
+namical system directly. Consider an objective function L that
+penalizes the error between the predictions and observations,
+where the prediction obeys a learning-based ODE, defined as
+follows,
+L(θ) = 1
+m−1
+m−1
+i=1
+ti+1
+ti
+δ (ts −τ)∥ˆxτ −xτ∥2dτ +λ∥θ∥2
+2
+(13)
+Authorized licensed use limited to: Xiamen University. Downloaded on May 11,2026 at 07:37:54 UTC from IEEE Xplore.  Restrictions apply. 
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+4 IEEEROBOTICSANDAUTOMATIONLETTERS.PREPRINTVERSION.APRIL,2026
+Algorithm1:NODE-HO-aCBFControlLoop
+1 Initializethecurrent time, latestmodelupdatetime,
+totaldurationandtrainingdataasti, tm, tT, and
+Qtrain
+2 ti←0;Qtrain←[ ]
+3whileti<tTdo
+4 ifNewhybridmodel isavailablethen
+5 NODE-HO-aCBFloads thenewmodel
+6 PIDgenerateadesiredcontroludesgivenrobot
+statexandareferencexref
+7 SolveQPin(9)andgenerateasafecontrolu
+8 Robotupdates thestateusingu
+9 Appendzti
+tothequeueQtrain (popout theoldest
+dataif thequeueisfull).
+10 ti←current time
+Algorithm2:OnlineDynamicLearning
+1 Initializethecurrent time, totalduration, trainingdata
+asti, tT,Qtrain, andthehybridmodel in(8)
+2whileti<tTdo
+3 ifQtrain ̸=∅then
+4 Trainthehybridmodelbyoptimizing(15)
+usingQtrain
+5 Savethenewmodel
+6 ti←current time
+wheremisthenumberofsamplesinQtrain,δ(·)istheDirac
+delta function, ts is any sampling time inQtrain, xτ is a
+shorthandforx(τ). For the learnedmodel togeneralize,we
+usetheL2regularizationwithaweightλ[21].Theprediction
+iscomputedasfollows,
+ˆxτ=xti
++ τ
+ti
+fh(zw, ˆdθ(xw))dw. (14)
+Theparametersθareobtainedbysolvingtheoptimization:
+argmin
+θ
+L(θ) (15a)
+s.t. ˙ x=fh(z, ˆdθ(x)). (15b)
+Inpractice, a gradient-basedoptimization tool, such as Py
+Torch, canbeemployedtosolvetheaboveoptimization.
+Ouralgorithmsupportsofflinepre-training.Inofflinemode,
+we collect state-control data by using the HOCBF safety
+controller.Wepre-traintheneuralnetworktoapproximatethe
+residualdynamicsusingall thedatacollectedanddeploythe
+NODE-HO-aCBFcontrollerwiththelearned ˆdθ(x).
+V. SIMULATIONS
+Todemonstrate theefficacyofour algorithm,wedesigna
+simulationwithadoubleintegratorwithdifferent residuals.
+A. NODE-HO-CBFswithDoubleIntegratorNominalModel
+Arobot is required to followa reference trajectory in a
+workspace containing obstaclesO1,...,ONobs
+, fromwhich
+the robot is required tokeepasafetydistanceDs.Thestate
+x=[r;˙ r]∈R6 containspositionandvelocity. Thecontrol
+u∈R3 istheacceleration.Weconsider thenominalmodelas
+adoubleintegrator, andthehybridmodelcanbewrittenas
+˙ x=Ax+Bu+ˆdθ(x), (16)
+whereA=[0,I;0,0] ∈R6×6,B=[0;I] ∈R6×3.Here
+0∈R3×3, I ∈R3×3 are the zero and identitymatrices,
+respectively.Weutilize this simplifiedmodel todemonstrate
+how the residual learning term ˆdθ(x) effectively captures
+unmodeled nonlinearities and disturbances, ensuring safety
+evenwithinaccuratenominaldynamics.
+At each step, we obtain reference position, velocity, and
+acceleration, i.e., [rdes;vdes;ades]. The desired control udes
+isgeneratedusingPID.We investigate theCBFthat ensures
+safety bymaintaining aminimumdistance fromobstacles.
+Specifically,wedefineaCBFfor thei-thobstacleas
+hi(x)=∥r−robs,i∥2
+2−D2
+s,∀i∈{1,...Nobs}, (17)
+whererobs,idenotesthepositionofi-thobstacle,andDsisthe
+minimal safetydistancebetweentherobotandobstacles.The
+relativedegreeofhi is twowithrespect tothemodel in(16).
+Weconsider theextendedclassKfunctionsasαi(h)=γih.
+Theoptimizationisformulatedasfollows:
+argmin
+u
+∥u−udes∥ (18a)
+s.t. sup
+u∈U
+(L2
+fh+L2
+ˆdθ
+h)+LfLˆdθ
+h+Lˆdθ
+Lfh
++[Lg(Lfh+Lˆdθ
+h)]u+(γ1+γ2)(Lfh+Lˆdθ
+h)
++γ2γ1h ≥0. (18b)
+Thesolutionof theoptimization(18) is thecontroluforour
+hybridlearning-enhancedhigh-orderaCBFcontroller.
+B. SimulationSetups
+Aperturbeddoubleintegrator isimplementedas ˙ x=Ax+
+Bu+d(x),whereweassume the residual d(x) isunknown
+to the robot in the simulation. Three types of residuals are
+considered, namely, “Attractive”, “Repulsive”, and “Time
+varying”. In “Attractive” and “Repulsive” experiments, the
+robot is attracted and repulsed towards and away fromthe
+centerofaforbiddenregionwheretherobot isnotallowedto
+enter, i.e., datt(x)=[0;−kr], drep(x)=[0;kr],wherek=
+0.4. In“Time-varying”experiment, residualschangebetween
+repulsiveandattractiveovertime,i.e.,dvar(x)=[0;ksin(t)r],
+wherek=1.0.ARunge–Kutta (RK4)numerical solverwith
+sampling timeof∆t=0.01s isused tosimulate responses
+given the control.We assume the robot state-control pair
+z:=[x;u]canbemeasuredat100Hz.Theclosed-loopcontrol
+runsat 100Hz.Weuseasimilarneural networkarchitecture
+to[22].Thevalueof ˆdθ iscomputedas theweightedsumof
+threeparallelneuralnetworkswiththesamearchitecture.Each
+neuralnetworkhastwohiddenlayers,eachwithonly16neu
+rons,where thehyperbolic tangent activation isappliedafter
+thefirsthiddenlayer.Theparallel structureenablescontinual
+adaptationwhilepreservingpreviouslylearneddynamics.The
+This article has been accepted for publication in IEEE Robotics and Automation Letters. This is the author's version which has not been fully edited and 
+content may change prior to final publication. Citation information: DOI 10.1109/LRA.2026.3686645
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+Authorized licensed use limited to: Xiamen University. Downloaded on May 11,2026 at 07:37:54 UTC from IEEE Xplore.  Restrictions apply. 
+5
+This article has been accepted for publication in IEEE Robotics and Automation Letters. This is the author's version which has not been fully edited and 
+content may change prior to final publication. Citation information: DOI 10.1109/LRA.2026.3686645
+PAN et al.: ONLINE LEARNING-ENHANCED HIGH ORDER ADAPTIVE SAFETY CONTROL
+queue size is fixed to three: in each training epoch, a new
+neural network is added, and the oldest one is removed if
+the queue is at capacity. Older neural networks are combined
+using exponential forgetting weights. This facilitates online
+adaptation and avoids instability in the closed-loop controller.
+A closed-loop PID synthesizes the desired control udes
+to track a circular reference of radius 2m at height 1m,
+centered at the origin of the x-y plane, with constant angular
+velocity 0.5rad/s. A spherical forbidden region of radius
+Ds = 3m is also located at the origin. Thus, the CBF must
+be effective to avoid safety violations. Our NODE-HO-aCBF
+controller supports both offline and online modes as described
+in Sec. IV-B. For our online controller, we maintain an FIFO
+queue of 10s of online data for training. For our offline model,
+we collect 40s of state-control data for training.
+Benchmarking. We compare the safety performance between:
+1) HOCBFs baseline without residuals [18] (we use the open
+source implementation from [23]), 2) HOCBFs baseline, 3)
+HO-aCBFs baseline [16], [17], 4) our online NODE-HO
+aCBFs, and 5) our offline NODE-HO-aCBFs. The HOCBF
+controller without external residuals acts as the baseline per
+formance. The comparison of our online and offline controllers
+with HOCBFs baseline demonstrates that our controllers im
+prove safety by adapting to residuals. The comparison of our
+online and offline controllers with adaptive HOCBFs high
+lights that our controllers can handle time-varying residuals,
+without knowledge of residuals nor extensive tuning. In CBF
+constraints of all controllers, we use extended class K functions
+αi(h) = γih, where γi = 2 for i = 1,2. For the HO-aCBFs
+baseline [16], [17], it is assumed that d(x) = Y (x)ˆ ϑ, where
+Y(x) ∈ Rp×s is a known matrix and ˆ ϑ ∈ Rs is a constant
+vector to estimate. To update the parameter ˆ ϑ, HO-aCBFs
+require computing its update law ˙ ˆ ϑ using an adaptation gain
+κ ∈R>0 andapositive definite gain matrix Γ ∈ Rs× s (see [16,
+eq. (14)]). We extensively tune κ and Γ in ˙ ˆ ϑ and assume
+a known Y(x) = [03×3;−r1,0,0;0,−r2,0;0,0,−(r3 − 1)].
+Note that this is a strong assumption and we usually do not
+have prior knowledge about Y (x) in practice. To compute
+the HO-aCBF controller online at 100Hz, we can only use
+a history stack of 0.5s. In the following section, we discuss
+that increasing the HO-aCBF’s history stack does not improve
+its performance significantly, yet prohibiting its online perfor
+mance. For HO-aCBF baseline [16], we set the bounds of the
+estimate ˆ ϑ between [−4,−4,−4] to [4,4,4], which cover the
+range of the underlying residual given our choice of Y (x).
+C. Simulation Qualitative Results
+We demonstrate the typical trajectories of baseline and
+our NODE-HO-aCBF controllers with three residual types
+in Fig. 3. In “Attractive” experiments (top-left), the HOCBF
+baseline fails to adapt, resulting in safety violations, as shown
+by the green trajectory. The HO-aCBFs, when well-tuned
+and given a high-fidelity Y (x), can compensate for residuals.
+With a constant Y (x), the HO-aCBF controller violates safety,
+showcasing reduced adaptability, as indicated by the brown
+trajectory. Both our online and offline controllers adapt to
+residuals and settle outside of the forbidden region without
+Fig. 3: Trajectories of safety controllers with different residuals. The blue dot
+represents the initial state, and the red dot represents the current reference.
+The gray sphere is the forbidden region. Top left: “Attractive” residual, Top
+right: “Repulsive” residual, Bottom left: “Time-varying” residual from 0-20s,
+Bottom right: “‘Time-varying” residual from 20-40s.
+Fig. 4: Time series of “Time-varying” residual prediction error of different
+controllers. The number attached to our controller stands for the number of
+neurons in each hidden layer. The 95% confidence intervals are over 10 trials.
+tuning. In “Repulsive” experiments (top-right), instead of being
+attracted to the center and violating safety, the HOCBF con
+troller settles farther from the center. The HO-aCBF controller
+can only adapt with a high-fidelity Y (x) and well-tuned. Our
+controllers, again, can adapt and settle at the boundary. Note
+that the NODE-HO-aCBF controller results in a noiser and
+slower adaptation at the beginning, as in Fig. 3, that the early
+trajectory can violate safety in the “Repulsive” experiment. The
+HO-aCBFs update ˆ ϑ in every control loop, instead, NODE
+HO-aCBFs learn a neural network alongside the controller. We
+call this noisier and slower convergence caused by a larger pa
+rameter space and alongside learning as learning delay. Despite
+this delay, the neural network provides nonlinearity required by
+complex residuals and learns an underlying manifold, so that
+the knowledge can be generalized to unseen areas and can learn
+patterns from more data without slowing down the control
+loop. We highlight that our controllers successfully adapt to
+“Time-varying” residual and have significant advantages in
+settling closer to the safety boundary, i.e., improve the safety,
+while all the other controllers fail to adapt. To highlight the
+performance of our controller. We plot the prediction error
+defined as ℓ2-norm of the difference between d(x) and ˆd(x) in
+Authorized licensed use limited to: Xiamen University. Downloaded on May 11,2026 at 07:37:54 UTC from IEEE Xplore.  Restrictions apply. 
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+IEEE ROBOTICS AND AUTOMATION LETTERS. PREPRINT VERSION. APRIL, 2026
+This article has been accepted for publication in IEEE Robotics and Automation Letters. This is the author's version which has not been fully edited and 
+content may change prior to final publication. Citation information: DOI 10.1109/LRA.2026.3686645
+6
+Residual Type
+Attractive
+Repulsive
+Time-varying
+Method hmin hneg Avg. Avg. S.sDist.
+Dist. sDist. Var.
+hmin hneg Avg. Avg. S.sDist.
+Dist. sDist. Var.
+hmin hneg Avg. Avg. S.sDist.
+CBFs No Res. 0.09 0.0% 0.07 0.01 2.02e-10 0.09 0.0% 0.07 0.01 2.02e-10
+Dist. sDist. Var.
+0.09 0.0% 0.07 0.01 2.02e-10
+CBFs-1.42 95.8% 0.27 0.25 8.20e-11 2.34 0.0% 0.42 0.37 5.64e-10-2.78 44.7% 0.45 0.39 0.18
+aCBFs (Tuned)-0.12 93.0% 0.06 0.01 9.89e-6-0.10 89.5% 0.07 0.01 9.89e-6-1.98 49.7% 0.27 0.23 0.06
+aCBFs Γ = 1-1.50 92.6% 0.19 0.15 1.63e-3 13.31 0.0% 1.49e+9 2.97e+9 4.69e+19-6.98 0.0% 1.47e+6 2.94e+6 3.74e+13
+aCBFs Const. Y-0.93 95.1% 0.19 0.16 1.44e-6 0.84 0.0% 0.24 0.18 5.29e-6-2.65 45.4% 0.41 0.36 0.16
+Ours Online-0.87 46.8% 0.07 0.02 3.93e-4-1.61 37.7% 0.13 0.03 9.74e-4-2.98 52.3% 0.20 0.04 2.29e-3
+Ours Offline 0.01 0.0% 0.06 0.01 1.45e-5 0.01 0.0% 0.06 0.01 1.62e-5-0.91 68.5% 0.10 0.05 3.11e-3
+TABLE I: Quantitative comparison between the baseline controllers and our controllers (The “HO-” prefix is dropped in all methods due to space limit) with
+different residuals in simulation. The statistics are averaged across 10 trials.
+Fig. 5: Qualitative comparison between baseline HO-aCBF controller with
+different settings. “Attractive” residual (on the left), and “Time-varying”
+residual (on the right) are applied in experiments.
+“Time-varying” experiments. Our online and offline controllers
+achieve lower prediction errors compared to the HOCBF and
+HO-aCBF controllers. Increasing the number of neurons in
+our controller adapts better with more data in “Time-varying”
+experiments, but with a noisier adaptation at the start.
+Next, we discuss tuning fragility, strong dependence on
+assumptions, and limitation on expressiveness and allowed
+data size of the HO-aCBF baseline. We tune κ and Γ, and
+provide a strong assumption of the knowledge matrix Y (x).
+Fig. 5 (left) shows controllers’ performance in the “Attractive”
+experiment. Note that a small Γ = (1e−5)I, a large Γ = I, or a
+constant matrix Y (x) = [03×3;−I3×3] leads to a degenerated
+performance of HO-aCBFs. In Fig. 5 (right), we increase the
+history stack of a tuned HO-aCBF controller to 5s and 15s (a
+large history stack significantly slows down the control step,
+so we freeze the simulation when computing the HO-aCBF
+control). We show the controller runtime and neural network
+training time in Table II. However, the controller cannot utilize
+more data and safety violations preserved. These prominent
+drawbacks—fragility to tuning, strong assumption, and lim
+ited expressiveness in pattern recognition and allowed history
+window—make it secondary compared to our approach.
+Methods Controller runtime (ms) Training time (s) Data size (s)
+Ours Online- 16
+1.36 0.55 10.00
+Ours Online- 64 2.35 1.33 10.00
+HO-aCBF 9.93- 0.50
+HO-aCBF 32.40- 5.00
+HO-aCBF 50.81- 10.00
+TABLE II: Controller and training runtimes for different algorithms. The
+number attached to our controller stands for the number of neurons in each
+hidden layer. The statistics are averaged over 3000 control steps.
+D. Simulation Quantitative Results
+We use the following quantitative evaluation criteria:
+• hmin: the minimum value of h(x) during execution.
+• hneg: the fractional time for which h(x) < 0 over
+execution time.
+• Average Distance (Avg.Dist.): the average distance to the
+forbidden region surface over execution time.
+• Average settleDistance (Avg.sDist.): same as Avg.Dist.,
+excluding the first 20s in the simulation execution.
+• Signed settleDistance Variance (S.sDist.Var.): the variance
+of the signed distance to the forbidden region surface
+(negative value indicates the robot is inside the forbidden
+region), excluding the first 20s in execution.
+In Table I, we record the averaged quantitative results from
+10 simulation trials. “CBFs No Res.” stands for the exper
+iments using HOCBFs controller without external residuals.
+In “Attractive” and “Repulsive” experiments, we observe that
+HO-aCBFs (Tuned), our online and offline controllers can
+maintain a small Avg.Dist. and Avg.sDist., indicating their suc
+cess in adaptation and safety improvement. However, the HO
+aCBF has high hneg, indicating that the HO-aCBF controller
+failed to estimate a high-fidelity residual to fully recover the
+safety. Among them, our offline controller has hmin closest
+to that of HOCBF with no external residuals and 0% of
+hneg, indicating the highest fidelity of residual estimations.
+These three controllers all demonstrate small S.sDist.Var.,
+indicating their settled trajectory maintains a stable distance
+to the forbidden region. All other baselines fail to adapt in
+“Attractive” and “Repulsive” experiments. In “Time-varying”
+experiments, only our controllers can adapt. According to
+Avg.Dist. and Avg.sDist. metrics, both our online and offline
+controllers are significantly closer to the safety boundary and
+have similar results with HOCBF with no external residuals.
+According to S.sDist.Var., our online and offline controllers
+settle on trajectories that variate least from the safety boundary,
+indicating a stable adaptation. Note that even a well-tuned
+HO-aCBF controller results in large Avg.Dist., Avg.sDist. and
+S.sDist.Var., as depicted in Fig. 3 (bottom right). Offline
+NODE-HO-aCBFs are pre-trained and thus adapt the residual
+without delay, resulting in minimal hmin. Online NODE-HO
+aCBFs have a learning delay, resulting in a slightly larger hmin
+and Avg.Dist. than the offline method, but as it learns online, it
+adapts better and settles stabler with incoming data and results
+in a smaller Avg.sDist. and S.sDist.Var.. Note that the metrics
+of HO-aCBF controller with a large Γ=1 differ significantly
+compared to other methods. As we mentioned in Sec. V-C
+that HO-aCBF controller is sensitive to Γ, and its learnable
+parameter ˆ ϑ fails to converge in the “Repulsive” and “Time
+varying” experiments, leading to invalid metrics.
+VI. PHYSICAL EXPERIMENTS
+A. Physical Experiment Setup
+The Crazyflie 2.1 is used as the physical platform to verify
+our controller. The open-source library Crazyswarm [24] is
+Authorized licensed use limited to: Xiamen University. Downloaded on May 11,2026 at 07:37:54 UTC from IEEE Xplore.  Restrictions apply. 
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+7
+This article has been accepted for publication in IEEE Robotics and Automation Letters. This is the author's version which has not been fully edited and 
+content may change prior to final publication. Citation information: DOI 10.1109/LRA.2026.3686645
+PAN et al.: ONLINE LEARNING-ENHANCED HIGH ORDER ADAPTIVE SAFETY CONTROL
+(a) HOCBFs- No Wind
+(b) HOCBFs
+(c) HO-aCBFs State Y (x)
+(d) HO-aCBFs Const. Y (x)
+(e) Ours Online
+(f) Ours Offline
+Fig. 6: The top views (first row) and the side views (second row) of 60s trajectories using different safety controllers in the physical experiments. The red
+arrows indicate the location and direction of the wind. The 60-second time series (third row) of the h value for adaptive controllers.
+Fig. 7: Long exposure of a nano quadrotor running our online controller under
+wind turbulence. The blue arrow indicates safety recovery over time.
+used as an interface to send position-velocity-acceleration con
+trols. The nano quadrotor weighs 38g with a 300mAh battery.
+A tower fan is placed horizontally at 0.7m and 1.16m in the
+positive direction of the x-axis from the origin. Its horizontal
+airflow produces an effective turbulent region of approximately
+0.55m wide, which travels 18km/h (its location and direction
+are depicted in Fig. 6). We define a planar circular reference
+trajectory of radius 0.8m at height 0.7m with constant angular
+velocity 0.5rad/s. The quadrotor is required to keep a 1m
+safety distance from the origin. A laptop with Intel i7 is used
+as the base station, and communication with the Crazyflie is
+established using Crazyradio PA. We obtain 100Hz position
+data from VICON motion capture, and estimate velocity from
+filtering. Control inputs are computed and sent to the quadrotor
+at 100Hz. We increase the number of neurons in each layer to
+64 in both our online and offline controller to estimate the wind
+turbulence. For the online mode, we maintain an FIFO queue
+of 10s of online data for training; there is no pre-training.
+For the offline mode, we trained on 350s state-control data
+collected by executing the HOCBF controller. A representative
+physical experiment using our online controller is shown in
+Fig. 7. Note that safety is improved against the wind on the
+fly. For the HO-aCBF controller, we used the state-informed
+matrix Y (x) = [03×3;r1,0,0;0,r2,0;0,0,r3], namely HO
+aCBF State Y (x), and a constant matrix Y (x) = [03×3;I3×3],
+namely HO-aCBF Constant Y(x).
+B. Physical Experiment Results
+We evaluate our controller both qualitatively and quantita
+tively. In Fig. 6, the first 60s of a representative trajectory
+for each controller is depicted as the blue curve; the gray
+area is the forbidden region; the red circle is the reference
+trajectory; and the red arrows indicate the wind location and
+direction. Notice that all the baseline methods (Fig. 6(b)-(d))
+cannot handle the wind turbulence, and converged to an unsafe
+trajectory. As shown by the trajectory and time series in Fig. 6,
+our online controller improves safety quickly after exposed
+to wind turbulence, while our pre-trained offline controller
+significantly improves safety starting from the beginning.
+Table III and Fig. 8 show the quantitative results in the
+physical experiments. For the metrics computed on settled
+trajectory, i.e., Avg.sDist. and S.sDist.Var., we exclude the
+first 60s of the trajectory. The learning model takes longer to
+converge due to the sparsity of turbulence data and complex
+turbulence of the wind. To highlight the adaptation results,
+we evaluate the trajectory segments where the wind causes
+significant effects, that is, from [0,π/4], and [π,5π/4] radian
+on the x-y plane. Our offline approach results in fewer safety
+violations, as indicated by a smaller hneg, adapts better to
+turbulence, according to smaller Avg.Dist. and Avg.sDist., and
+settled on a more stable trajectory, according to a smaller
+S.sDist.Var., compared to HOCBF and HO-aCBF controllers.
+Note that our offline approach results in smaller Avg.Dist. and
+Avg.sDist. even compared to the HOCBF without wind turbu
+lence, as model mismatches exist between a double integrator
+Authorized licensed use limited to: Xiamen University. Downloaded on May 11,2026 at 07:37:54 UTC from IEEE Xplore.  Restrictions apply. 
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+IEEE ROBOTICS AND AUTOMATION LETTERS. PREPRINT VERSION. APRIL, 2026
+This article has been accepted for publication in IEEE Robotics and Automation Letters. This is the author's version which has not been fully edited and 
+content may change prior to final publication. Citation information: DOI 10.1109/LRA.2026.3686645
+8
+Fig. 8: hneg and Avg.sDist. of baselines and our controllers. The top of the
+bars denotes the median, while the ends of the error bars represent the 25th
+and 75th percentiles. The statistics are obtained from 10 trials.
+and a quadrotor model in the HOCBF controller, learning the
+residuals adapt to such model mismatch. Our online approach
+has a smaller hneg than the HO-aCBF controller and is slightly
+larger than that of HOCBF, as it requires more data to learn
+the residual. As the online approach sees more data, it adapts
+turbulence better and settles on a more stable trajectory, as
+indicated by smaller Avg.sDist. and S.sDist.Var., compared to
+HOCBF and HO-aCBF controllers.
+Method hmin hneg Avg.Dist. Avg.sDist. S.sDist.Var.
+CBFs- No Wind 0.03 0.0% 6.46e-2 6.39e-2 1.02e-4
+CBFs-0.34 31.1% 9.03e-2 8.30e-2 7.61e-3
+aCBFs State Y-0.23 47.2% 4.68e-2 4.76e-2 3.26e-3
+aCBFs Const. Y-0.22 45.4% 4.49e-2 4.53e-2 2.90e-3
+Ours Online-0.55 35.3% 7.08e-2 4.29e-2 2.49e-3
+Ours Offline-0.24 15.9% 4.44e-2 4.17e-2 1.34e-3
+TABLE III: Quantitative comparison between the baseline controllers and our
+controllers (The “HO-” prefix is dropped in all methods due to space limit)
+in the physical experiments. The statistics are averaged across 10 trials.
+VII. CONCLUSION
+In this work, we present a learning-enhanced high-order
+adaptive control barrier function that improves safety online
+under time-varying complex model perturbations. We use a
+hybrid structure that combines a nominal model with a neural
+network residual model, using neural ODEs. Due to its hybrid
+design, our controller is data-efficient and expressive, making
+it suitable for adapting complex, time-varying residuals online.
+Wedemonstrate its efficacy across different simulated residuals
+and a representative physical experiment, benchmarked with
+baseline HOCBFs [18] and HO-aCBFs [16], [17] (with differ
+ent hyperparameters). A 38g nano quadrotor, deployed with
+our online NODE-HO-aCBF controller, can quickly improve
+its safety performance in 18km/h turbulent wind. Current
+large-scale swarm trajectory planning algorithms, such as [25]
+[27], lack an adaptive controller that improves safety and
+stability in close-proximity flight. For future work, we aim
+to provide probabilistic safety guarantees for the controller
+proposed in this work and to improve the safety and stability
+of close-proximity trajectory planning for large-scale swarms.
+REFERENCES
+[1] A. D. Ames, J. W. Grizzle, and P. Tabuada, “Control barrier function
+based quadratic programs with application to adaptive cruise control,”
+in 53rd IEEE conference on decision and control. IEEE, 2014, pp.
+6271–6278.
+[2] A. D. Ames, S. Coogan, M. Egerstedt, G. Notomista, K. Sreenath, and
+P. Tabuada, “Control barrier functions: Theory and applications,” in 2019
+18th European control conference (ECC). IEEE, 2019, pp. 3420–3431.
+[3] Y. Wang, L. Pan, Y. Qu, T. Wang, and N. Ayanian, “Connectivity
+maintenance and recovery for multi-robot motion planning,” 2026.
+[Online]. Available: https://arxiv.org/abs/2510.03504
+[4] M. O’Connell, G. Shi, X. Shi, K. Azizzadenesheli, A. Anandkumar,
+Y. Yue, and S.-J. Chung, “Neural-fly enables rapid learning for agile
+flight in strong winds,” Science Robotics, vol. 7, no. 66, p. eabm6597,
+2022.
+[5] R. T. Chen, Y. Rubanova, J. Bettencourt, and D. K. Duvenaud, “Neural
+ordinary differential equations,” Advances in neural information process
+ing systems, vol. 31, 2018.
+[6] T. Z. Jiahao, M. A. Hsieh, and E. Forgoston, “Knowledge-based learning
+of nonlinear dynamics and chaos,” Chaos: An Interdisciplinary Journal
+of Nonlinear Science, vol. 31, no. 11, 2021.
+[7] T. Z. Jiahao, L. Pan, and M. A. Hsieh, “Learning to swarm with
+knowledge-based neural ordinary differential equations,” in IEEE Int.
+Conf. on Robot. and Automat. (ICRA). IEEE, 2022, pp. 6912–6918.
+[8] M. Deisenroth and C. E. Rasmussen, “Pilco: A model-based and data
+efficient approach to policy search,” in Proceedings of the 28th Interna
+tional Conference on machine learning (ICML-11), 2011, pp. 465–472.
+[9] L. Hewing, J. Kabzan, and M. N. Zeilinger, “Cautious model predic
+tive control using gaussian process regression,” IEEE Transactions on
+Control Systems Technology, vol. 28, no. 6, pp. 2736–2743, 2019.
+[10] A. Taylor, A. Singletary, Y. Yue, and A. Ames, “Learning for safety
+critical control with control barrier functions,” in Learning for dynamics
+and control. PMLR, 2020, pp. 708–717.
+[11] J. Choi, F. Castaneda, C. J. Tomlin, and K. Sreenath, “Reinforcement
+learning for safety-critical control under model uncertainty, using con
+trol lyapunov functions and control barrier functions,” arXiv preprint
+arXiv:2004.07584, 2020.
+[12] M. Jankovic, “Robust control barrier functions for constrained stabiliza
+tion of nonlinear systems,” Automatica, vol. 96, pp. 359–367, 2018.
+[13] A. J. Taylor and A. D. Ames, “Adaptive safety with control barrier
+functions,” in Amer. Control Conf. (ACC). IEEE, 2020, pp. 1399–1405.
+[14] B. T. Lopez, J.-J. E. Slotine, and J. P. How, “Robust adaptive control
+barrier functions: An adaptive and data-driven approach to safety,” IEEE
+Control Systems Letters, vol. 5, no. 3, pp. 1031–1036, 2020.
+[15] M. Black and D. Panagou, “Safe control design for unknown non
+linear systems with koopman-based fixed-time identification,” IFAC
+PapersOnLine, vol. 56, no. 2, pp. 11369–11376, 2023.
+[16] M. H. Cohen and C. Belta, “High order robust adaptive control barrier
+functions and exponentially stabilizing adaptive control lyapunov func
+tions,” in Amer. Control Conf. (ACC). IEEE, 2022, pp. 2233–2238.
+[17] A. Isaly, O. S. Patil, R. G. Sanfelice, and W. E. Dixon, “Adaptive safety
+with multiple barrier functions using integral concurrent learning,” in
+Amer. Control Conf. (ACC). IEEE, 2021, pp. 3719–3724.
+[18] W. Xiao and C. Belta, “High-order control barrier functions,” IEEE
+Transactions on Automatic Control, vol. 67, no. 7, pp. 3655–3662, 2021.
+[19] H. K. Khalil and J. W. Grizzle, Nonlinear systems. Prentice hall Upper
+Saddle River, NJ, 2002, vol. 3.
+[20] X. Tan, W. S. Cortez, and D. V. Dimarogonas, “High-order barrier
+functions: Robustness, safety, and performance-critical control,” IEEE
+Transactions on Automatic Control, vol. 67, no. 6, pp. 3021–3028, 2021.
+[21] C. Zhang, S. Bengio, M. Hardt, B. Recht, and O. Vinyals, “Under
+standing deep learning requires rethinking generalization,” arXiv preprint
+arXiv:1611.03530, 2016.
+[22] T. Z. Jiahao, K. Y. Chee, and M. A. Hsieh, “Online dynamics learning
+for predictive control with an application to aerial robots,” in Conference
+on Robot Learning. PMLR, 2023, pp. 2251–2261.
+[23] L. Pan, M. Catellani, L. Sabattini, and N. Ayanian, “Robust trajectory
+generation and control for quadrotor motion planning with field-of-view
+control barrier certification,” arXiv preprint arXiv:2502.01009, 2025.
+[24] J. A. Preiss, W. Honig, G. S. Sukhatme, and N. Ayanian, “Crazyswarm:
+A large nano-quadcopter swarm,” in IEEE Int. Conf. on Robot. and
+Automat. (ICRA). IEEE, 2017, pp. 3299–3304.
+[25] L. Pan, K. Hsu, and N. Ayanian, “Hierarchical large scale multirobot
+path (re) planning,” in IEEE/RSJ Int. Conf. on Intell. Robots and Syst.
+(IROS). IEEE, 2024, pp. 5319–5326.
+[26] L. Pan, Y. Wang, and N. Ayanian, “Hierarchical trajectory (re) planning
+for a large scale swarm,” arXiv preprint arXiv:2501.16743, 2025.
+[27] C. E. Luis, M. Vukosavljev, and A. P. Schoellig, “Online trajectory
+generation with distributed model predictive control for multi-robot
+motion planning,” IEEE Robotics and Automation Letters, vol. 5, no. 2,
+pp. 604–611, 2020.
+Authorized licensed use limited to: Xiamen University. Downloaded on May 11,2026 at 07:37:54 UTC from IEEE Xplore.  Restrictions apply. 
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.

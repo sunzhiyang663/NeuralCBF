@@ -1,0 +1,116 @@
+{
+  "H_td_gamma095": {
+    "collision_rate": {
+      "mean": 0.25,
+      "std": 0.10206207261596575
+    },
+    "min_obstacle_distance": {
+      "mean": -0.07954034669653227,
+      "std": 0.023747139443868
+    },
+    "mean_obstacle_distance": {
+      "mean": 1.250777932419744,
+      "std": 0.0011793739074979189
+    },
+    "h_min": {
+      "mean": -0.08851744482914607,
+      "std": 0.03393847280038993
+    },
+    "cbf_satisfaction_rate": {
+      "mean": 0.9979999999999999,
+      "std": 1.1102230246251565e-16
+    },
+    "convergence_rate": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "mean_convergence_time": {
+      "mean": NaN,
+      "std": NaN
+    },
+    "mean_final_error": {
+      "mean": 0.03855771799364358,
+      "std": 5.538063431121154e-05
+    },
+    "lyapunov_decay_rate": {
+      "mean": 0.00961182940654863,
+      "std": 1.5364872350164964e-06
+    }
+  },
+  "I_td_gamma099": {
+    "collision_rate": {
+      "mean": 0.20833333333333334,
+      "std": 0.05892556509887896
+    },
+    "min_obstacle_distance": {
+      "mean": -0.07101759958553251,
+      "std": 0.04772867576785208
+    },
+    "mean_obstacle_distance": {
+      "mean": 1.250760188066734,
+      "std": 0.0004508560714838228
+    },
+    "h_min": {
+      "mean": -0.08926829571525256,
+      "std": 0.04645623970042263
+    },
+    "cbf_satisfaction_rate": {
+      "mean": 0.9979999999999999,
+      "std": 1.1102230246251565e-16
+    },
+    "convergence_rate": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "mean_convergence_time": {
+      "mean": NaN,
+      "std": NaN
+    },
+    "mean_final_error": {
+      "mean": 0.0385712640019126,
+      "std": 9.90219728260593e-05
+    },
+    "lyapunov_decay_rate": {
+      "mean": 0.009612133888400815,
+      "std": 2.73843789640249e-06
+    }
+  },
+  "J_td_gamma100": {
+    "collision_rate": {
+      "mean": 0.25,
+      "std": 0.10206207261596575
+    },
+    "min_obstacle_distance": {
+      "mean": -0.06469006432244266,
+      "std": 0.03896990002095864
+    },
+    "mean_obstacle_distance": {
+      "mean": 1.2505355706668042,
+      "std": 0.0014393063752251092
+    },
+    "h_min": {
+      "mean": -0.08789322897791862,
+      "std": 0.043359658898295114
+    },
+    "cbf_satisfaction_rate": {
+      "mean": 0.9979999999999999,
+      "std": 1.1102230246251565e-16
+    },
+    "convergence_rate": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "mean_convergence_time": {
+      "mean": NaN,
+      "std": NaN
+    },
+    "mean_final_error": {
+      "mean": 0.038606908842687145,
+      "std": 0.00012290487439950936
+    },
+    "lyapunov_decay_rate": {
+      "mean": 0.009613059747783436,
+      "std": 3.257551695282706e-06
+    }
+  }
+}

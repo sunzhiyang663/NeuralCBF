@@ -1,0 +1,268 @@
+{
+  "A_full": {
+    "collision_rate": {
+      "mean": 0.3333333333333333,
+      "std": 0.05892556509887896
+    },
+    "min_obstacle_distance": {
+      "mean": -0.23924273807100957,
+      "std": 0.050005750288156715
+    },
+    "mean_obstacle_distance": {
+      "mean": 1.2374029301550902,
+      "std": 0.0023128534164564324
+    },
+    "h_min": {
+      "mean": -0.179428959886233,
+      "std": 0.025191181833503246
+    },
+    "cbf_satisfaction_rate": {
+      "mean": 0.9979999999999999,
+      "std": 1.1102230246251565e-16
+    },
+    "convergence_rate": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "mean_convergence_time": {
+      "mean": NaN,
+      "std": NaN
+    },
+    "mean_final_error": {
+      "mean": 0.03857338466254747,
+      "std": 5.382573445819061e-06
+    },
+    "lyapunov_decay_rate": {
+      "mean": 0.009612322939637744,
+      "std": 1.2261532438608127e-07
+    }
+  },
+  "B_no_boundary": {
+    "collision_rate": {
+      "mean": 0.375,
+      "std": 0.0
+    },
+    "min_obstacle_distance": {
+      "mean": -0.9363256672144934,
+      "std": 0.08798531757551488
+    },
+    "mean_obstacle_distance": {
+      "mean": 1.207073701228867,
+      "std": 0.000750855790466477
+    },
+    "h_min": {
+      "mean": -0.20207908749580383,
+      "std": 0.05913807664571673
+    },
+    "cbf_satisfaction_rate": {
+      "mean": 0.9979999999999999,
+      "std": 1.1102230246251565e-16
+    },
+    "convergence_rate": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "mean_convergence_time": {
+      "mean": NaN,
+      "std": NaN
+    },
+    "mean_final_error": {
+      "mean": 0.03856352884170073,
+      "std": 1.0083564612732574e-06
+    },
+    "lyapunov_decay_rate": {
+      "mean": 0.00961206312198378,
+      "std": 2.4971446012453107e-08
+    }
+  },
+  "C_no_invariance": {
+    "collision_rate": {
+      "mean": 0.25,
+      "std": 0.0
+    },
+    "min_obstacle_distance": {
+      "mean": -0.08714383500395713,
+      "std": 0.02644162317292354
+    },
+    "mean_obstacle_distance": {
+      "mean": 1.2437539002207656,
+      "std": 0.00478531311861876
+    },
+    "h_min": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "cbf_satisfaction_rate": {
+      "mean": 0.9979999999999999,
+      "std": 1.1102230246251565e-16
+    },
+    "convergence_rate": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "mean_convergence_time": {
+      "mean": NaN,
+      "std": NaN
+    },
+    "mean_final_error": {
+      "mean": 0.038571575072723865,
+      "std": 5.97308992202277e-07
+    },
+    "lyapunov_decay_rate": {
+      "mean": 0.009612236503333699,
+      "std": 2.3641768373772263e-08
+    }
+  },
+  "D_no_converse": {
+    "collision_rate": {
+      "mean": 0.375,
+      "std": 0.0
+    },
+    "min_obstacle_distance": {
+      "mean": -0.1566937959575925,
+      "std": 0.022792179988472057
+    },
+    "mean_obstacle_distance": {
+      "mean": 1.2427350917370925,
+      "std": 0.002894788410934745
+    },
+    "h_min": {
+      "mean": -0.1393528680006663,
+      "std": 0.009334659596060153
+    },
+    "cbf_satisfaction_rate": {
+      "mean": 0.9979999999999999,
+      "std": 1.1102230246251565e-16
+    },
+    "convergence_rate": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "mean_convergence_time": {
+      "mean": NaN,
+      "std": NaN
+    },
+    "mean_final_error": {
+      "mean": 0.038449922518176485,
+      "std": 0.0001625278691595684
+    },
+    "lyapunov_decay_rate": {
+      "mean": 0.00960890693967942,
+      "std": 4.633977210854796e-06
+    }
+  },
+  "E_no_smoothness": {
+    "collision_rate": {
+      "mean": 0.375,
+      "std": 0.0
+    },
+    "min_obstacle_distance": {
+      "mean": -0.20170461491783023,
+      "std": 0.040496864327824164
+    },
+    "mean_obstacle_distance": {
+      "mean": 1.2380256277301775,
+      "std": 0.001814086299356426
+    },
+    "h_min": {
+      "mean": -0.20666364828745523,
+      "std": 0.01801515240854214
+    },
+    "cbf_satisfaction_rate": {
+      "mean": 0.9979999999999999,
+      "std": 1.1102230246251565e-16
+    },
+    "convergence_rate": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "mean_convergence_time": {
+      "mean": NaN,
+      "std": NaN
+    },
+    "mean_final_error": {
+      "mean": 0.038537462369581964,
+      "std": 3.2656066661156637e-05
+    },
+    "lyapunov_decay_rate": {
+      "mean": 0.009611367752350266,
+      "std": 9.233816909195029e-07
+    }
+  },
+  "F_boundary_invariance_only": {
+    "collision_rate": {
+      "mean": 0.375,
+      "std": 0.0
+    },
+    "min_obstacle_distance": {
+      "mean": -0.14942892171032665,
+      "std": 0.02020613156092881
+    },
+    "mean_obstacle_distance": {
+      "mean": 1.2477124687255927,
+      "std": 0.003963266182057135
+    },
+    "h_min": {
+      "mean": -0.13525034487247467,
+      "std": 0.007233809982619627
+    },
+    "cbf_satisfaction_rate": {
+      "mean": 0.9979999999999999,
+      "std": 1.1102230246251565e-16
+    },
+    "convergence_rate": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "mean_convergence_time": {
+      "mean": NaN,
+      "std": NaN
+    },
+    "mean_final_error": {
+      "mean": 0.038210276458914914,
+      "std": 0.00038273917689296967
+    },
+    "lyapunov_decay_rate": {
+      "mean": 0.009601533475876136,
+      "std": 1.1882503592943939e-05
+    }
+  },
+  "G_boundary_only": {
+    "collision_rate": {
+      "mean": 0.16666666666666666,
+      "std": 0.05892556509887896
+    },
+    "min_obstacle_distance": {
+      "mean": -0.04270429794776979,
+      "std": 0.02948888842794571
+    },
+    "mean_obstacle_distance": {
+      "mean": 1.2487881066569475,
+      "std": 0.0022626381137901283
+    },
+    "h_min": {
+      "mean": -0.01094178855419159,
+      "std": 0.015474025769956445
+    },
+    "cbf_satisfaction_rate": {
+      "mean": 0.9979999999999999,
+      "std": 1.1102230246251565e-16
+    },
+    "convergence_rate": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "mean_convergence_time": {
+      "mean": NaN,
+      "std": NaN
+    },
+    "mean_final_error": {
+      "mean": 0.03867773613199123,
+      "std": 9.837782786109219e-05
+    },
+    "lyapunov_decay_rate": {
+      "mean": 0.009614703574582906,
+      "std": 2.157108709113064e-06
+    }
+  }
+}
