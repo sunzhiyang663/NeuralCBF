@@ -51,7 +51,7 @@ def configure_globals(group, seed):
     cbf.LAMBDA_BOUNDARY   = 1.0
     cbf.LAMBDA_INVARIANCE = 1.0
     cbf.LAMBDA_SMOOTHNESS = 0.01
-    cbf.LAMBDA_ZERO_LS    = 0.5
+    cbf.LAMBDA_ZERO_LS    = 1.0
 
     # Use fewer epochs for faster iteration
     cbf.EPOCHS            = 1500
@@ -164,10 +164,15 @@ def run_group(group, seeds):
     name, conv_mode, residual_mode, lam_conv = group
     results = []
 
-    # Determine pretrained mapping: D_res_noConv -> A_full_noConv
+    # Determine pretrained mapping: D->A, E->B, F->C
+    RESIDUAL_TO_FULL = {
+        "D_res_noConv":  "A_full_noConv",
+        "E_res_TD":      "B_full_TD",
+        "F_res_Rollout": "C_full_Rollout",
+    }
     pretrained_base = None
     if residual_mode:
-        base_name = name.replace("_res_", "_full_")
+        base_name = RESIDUAL_TO_FULL.get(name, name.replace("_res_", "_full_"))
         pretrained_base = os.path.join(RESULTS_ROOT, base_name)
 
     for seed in seeds:
@@ -289,8 +294,8 @@ def main():
         description="Experiment: Converse Loss & Residual Network on Narrow Gap")
     parser.add_argument('--quick', action='store_true',
                        help='Quick mode: 300 epochs full, 100 epochs residual, 1 seed')
-    parser.add_argument('--seeds', type=int, nargs='+', default=[42, 123, 456],
-                       help='Seeds to run (default: 42 123 456)')
+    parser.add_argument('--seeds', type=int, nargs='+', default=[42],
+                       help='Seeds to run (default: 42). Use --seeds 42 123 456 for 3 seeds.')
     parser.add_argument('--groups', type=str, nargs='+', default=None,
                        help='Specific groups to run (e.g. A_full_noConv C_full_Rollout)')
     parser.add_argument('--skip-full', action='store_true',

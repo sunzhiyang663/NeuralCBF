@@ -86,7 +86,7 @@ def sample_data(obstacle_set, n_total=4096, xlim=(-4, 5), ylim=(-4, 5),
                                   (max(n_uniform, 0), 2))
 
     # --- combine ---
-    x_safe = np.vstack([x_boundary, x_boundary_exact, x_safe_int])
+    x_safe = np.vstack([x_boundary, x_safe_int])
     x_unsafe_all = np.vstack([x_unsafe, x_replay]) if len(x_replay) > 0 else x_unsafe
     parts = [x for x in [x_boundary, x_boundary_exact, x_safe_int,
                           x_unsafe, x_uniform, x_replay] if len(x) > 0]

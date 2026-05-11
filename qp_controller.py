@@ -43,10 +43,10 @@ class QPController:
         if u is not None:
             return u
 
-        # Strategy 3: Gradient escape
+        # Strategy 3: Gradient escape — move along +∇h toward safety
         grad_norm = np.linalg.norm(grad_h_np)
         if grad_norm > 1e-8:
-            return -self.escape_gain * grad_h_np / grad_norm
+            return self.escape_gain * grad_h_np / grad_norm
         return np.zeros(2)
 
     def _solve_qp(self, x, h_val, grad_h_np, use_clf=True):

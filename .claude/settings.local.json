@@ -5,7 +5,8 @@
       "Bash(python -c \"import ast; ast.parse\\(open\\('improved_cbf.py'\\).read\\(\\)\\); print\\('AST OK'\\)\")",
       "Bash(python -c \"import ast; ast.parse\\(open\\('improved_cbf.py', encoding='utf-8'\\).read\\(\\)\\); print\\('AST OK'\\)\")",
       "Bash(python -c \"import py_compile; py_compile.compile\\('experiment_gap.py', doraise=True\\); print\\('Syntax OK'\\)\")",
-      "Bash(python -c \"import py_compile; py_compile.compile\\('improved_cbf.py', doraise=True\\); py_compile.compile\\('experiment_gap.py', doraise=True\\); py_compile.compile\\('models.py', doraise=True\\); py_compile.compile\\('dynamics.py', doraise=True\\); py_compile.compile\\('loss_functions.py', doraise=True\\); py_compile.compile\\('qp_controller.py', doraise=True\\); print\\('All syntax OK'\\)\")"
+      "Bash(python -c \"import py_compile; py_compile.compile\\('improved_cbf.py', doraise=True\\); py_compile.compile\\('experiment_gap.py', doraise=True\\); py_compile.compile\\('models.py', doraise=True\\); py_compile.compile\\('dynamics.py', doraise=True\\); py_compile.compile\\('loss_functions.py', doraise=True\\); py_compile.compile\\('qp_controller.py', doraise=True\\); print\\('All syntax OK'\\)\")",
+      "Bash(python experiment_gap.py --quick)"
     ]
   }
 }

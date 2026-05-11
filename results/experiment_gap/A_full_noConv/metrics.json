@@ -1,0 +1,38 @@
+{
+  "aggregate": {
+    "group": "A_full_noConv",
+    "converse_mode": "none",
+    "residual_mode": false,
+    "collision_rate_mean": 0.5,
+    "collision_rate_std": 0.0,
+    "min_obstacle_distance_mean": -0.05003674212315956,
+    "min_obstacle_distance_std": 0.0,
+    "h_min_mean": 0.0,
+    "h_min_std": 0.0,
+    "cbf_satisfaction_rate_mean": 0.9990411872602968,
+    "cbf_satisfaction_rate_std": 0.0,
+    "convergence_rate_mean": 0.0,
+    "convergence_rate_std": 0.0,
+    "mean_final_error_mean": 0.037521026421611835,
+    "mean_final_error_std": 0.0,
+    "lyapunov_decay_rate_mean": 0.0047790547195783765,
+    "lyapunov_decay_rate_std": 0.0,
+    "training_time_min_mean": 1.736821142832438,
+    "training_time_min_std": 0.0
+  },
+  "per_seed": [
+    {
+      "collision_rate": 0.5,
+      "min_obstacle_distance": -0.05003674212315956,
+      "h_min": 0.0,
+      "h_min_std": 0.0,
+      "cbf_satisfaction_rate": 0.9990411872602968,
+      "convergence_rate": 0.0,
+      "mean_final_error": 0.037521026421611835,
+      "lyapunov_decay_rate": 0.0047790547195783765,
+      "n_trajectories": 12,
+      "n_collisions": 6,
+      "training_time_min": 1.736821142832438
+    }
+  ]
+}
