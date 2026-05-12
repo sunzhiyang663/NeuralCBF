@@ -49,7 +49,7 @@ def gpu_report():
 # ============================================================================
 # Configuration
 # ============================================================================
-BATCH_SIZE          = 4096
+BATCH_SIZE          = 32768
 EPOCHS              = 3000
 LR                  = 3e-4
 HIDDEN_DIM          = 256
@@ -61,7 +61,7 @@ LAMBDA_BOUNDARY     = 1.0
 LAMBDA_INVARIANCE   = 1.0
 LAMBDA_CONVERSE     = 0.5
 LAMBDA_SMOOTHNESS   = 0.01
-LAMBDA_ZERO_LS      = 0.5
+LAMBDA_ZERO_LS      = 1.0
 
 # QP controller
 ALPHA_CBF           = 1.0
@@ -71,7 +71,7 @@ USE_SLACK           = True
 ESCAPE_GAIN         = 2.0
 
 # CBF condition
-EPSILON             = 0.1
+EPSILON             = 0.15
 ROLLOUT_STEPS       = 10
 DT                  = 0.05
 CONVERSE_MODE       = "td_bellman"
@@ -82,6 +82,7 @@ TAU_TARGET          = 0.005
 SCENE               = "three_circles"
 XLIM, YLIM          = (-4.0, 5.0), (-4.0, 5.0)
 BOUNDARY_THICKNESS  = 0.3
+BOUNDARY_MARGIN     = 0.05
 
 # Simulation
 SIM_T               = 100.0
@@ -223,6 +224,7 @@ class CBFExperiment:
             x_safe, x_unsafe, x_general, x_boundary_exact = sample_data(
                 self.obstacle_set, BATCH_SIZE, XLIM, YLIM,
                 BOUNDARY_THICKNESS, self.replay_buffer, REPLAY_REPLACE_RATIO,
+                BOUNDARY_MARGIN,
             )
             if torch.cuda.is_available():
                 torch.cuda.synchronize()

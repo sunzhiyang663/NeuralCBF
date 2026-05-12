@@ -16,7 +16,8 @@ DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # ============================================================================
 
 def sample_data(obstacle_set, n_total=4096, xlim=(-4, 5), ylim=(-4, 5),
-                boundary_thickness=0.3, replay_buffer=None, replay_replace_ratio=0.3):
+                boundary_thickness=0.3, replay_buffer=None, replay_replace_ratio=0.3,
+                boundary_margin=0.05):
     """Stratified sampling with exact boundary points and collision replay.
 
     Returns:
@@ -25,15 +26,16 @@ def sample_data(obstacle_set, n_total=4096, xlim=(-4, 5), ylim=(-4, 5),
     n_boundary = int(n_total * 0.25)
     n_exact    = int(n_total * 0.05)
     n_safe_int = int(n_total * 0.25)
-    n_unsafe   = int(n_total * 0.25)
+    n_unsafe_inner = int(n_total * 0.10)
+    n_unsafe   = int(n_total * 0.15)
 
     # Replace a fraction of unsafe samples with collision replay points
     if replay_buffer and len(replay_buffer) > 0:
-        n_replay = min(int(n_unsafe * replay_replace_ratio), len(replay_buffer))
+        n_replay = min(int((n_unsafe + n_unsafe_inner) * replay_replace_ratio), len(replay_buffer))
     else:
         n_replay = 0
     n_unsafe = max(0, n_unsafe - n_replay)
-    n_uniform = max(0, n_total - n_boundary - n_exact - n_safe_int - n_unsafe - n_replay)
+    n_uniform = max(0, n_total - n_boundary - n_exact - n_safe_int - n_unsafe_inner - n_unsafe - n_replay)
 
     # --- exact boundary points ---
     x_boundary_exact = obstacle_set.exact_boundary_points(
@@ -42,11 +44,11 @@ def sample_data(obstacle_set, n_total=4096, xlim=(-4, 5), ylim=(-4, 5),
         idx = np.random.choice(len(x_boundary_exact), n_exact, replace=False)
         x_boundary_exact = x_boundary_exact[idx]
 
-    # --- boundary ring ---
+    # --- outer boundary ring (safe, offset from boundary by margin) ---
     x_boundary = []
     for obs in obstacle_set.obstacles:
         n = n_boundary // len(obstacle_set.obstacles)
-        r = np.random.uniform(obs['radius'], obs['radius'] + boundary_thickness, n)
+        r = np.random.uniform(obs['radius'] + boundary_margin, obs['radius'] + boundary_thickness, n)
         th = np.random.uniform(0, 2 * np.pi, n)
         x_boundary.append(np.stack([r * np.cos(th), r * np.sin(th)], 1) + obs['center'])
     x_boundary = np.vstack(x_boundary)[:n_boundary]
@@ -76,6 +78,16 @@ def sample_data(obstacle_set, n_total=4096, xlim=(-4, 5), ylim=(-4, 5),
         x_unsafe.append(np.stack([r * np.cos(th), r * np.sin(th)], 1) + obs['center'])
     x_unsafe = np.vstack(x_unsafe)[:n_unsafe]
 
+    # --- inner boundary ring (unsafe, just inside obstacle boundary) ---
+    x_unsafe_inner = []
+    for obs in obstacle_set.obstacles:
+        n = n_unsafe_inner // len(obstacle_set.obstacles)
+        r_lo = max(0, obs['radius'] - boundary_thickness)
+        r = np.random.uniform(r_lo, obs['radius'], n)
+        th = np.random.uniform(0, 2 * np.pi, n)
+        x_unsafe_inner.append(np.stack([r * np.cos(th), r * np.sin(th)], 1) + obs['center'])
+    x_unsafe_inner = np.vstack(x_unsafe_inner)[:n_unsafe_inner]
+
     # --- collision replay ---
     x_replay = np.zeros((0, 2))
     if n_replay > 0 and replay_buffer and len(replay_buffer) >= n_replay:
@@ -87,9 +99,9 @@ def sample_data(obstacle_set, n_total=4096, xlim=(-4, 5), ylim=(-4, 5),
 
     # --- combine ---
     x_safe = np.vstack([x_boundary, x_safe_int])
-    x_unsafe_all = np.vstack([x_unsafe, x_replay]) if len(x_replay) > 0 else x_unsafe
+    x_unsafe_all = np.vstack([x_unsafe_inner, x_unsafe, x_replay]) if len(x_replay) > 0 else np.vstack([x_unsafe_inner, x_unsafe])
     parts = [x for x in [x_boundary, x_boundary_exact, x_safe_int,
-                          x_unsafe, x_uniform, x_replay] if len(x) > 0]
+                          x_unsafe_inner, x_unsafe, x_uniform, x_replay] if len(x) > 0]
     x_general = np.vstack(parts)
 
     return (
